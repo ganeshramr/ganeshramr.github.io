@@ -3,18 +3,18 @@ markdown: redcarpet
 highlighter: pygments
 
 # Site settings
-title: "date with tech"
+title: "my four line notebook"
 description: > # this means to ignore newlines until "email:"
-   A Jekyll theme - Medium inspired
+   learn,share,grow
 
-email: a-mail@mail.mail
+email: mailganesh@icloud.com
 #blog logo
-logo: "/assets/images/df_logo.jpg"
+logo: "/assets/images/G.png"
 # blog cover
 cover: "/assets/images/12023295874_7d981fb885_k.jpg"
 
-name: 'Dirk Fabisch'
-author: 'Dirk Fabisch'
+name: 'Ganeshram Ramamurthy'
+author: 'Ganeshram Ramamurthy'
 author_image: "/assets/images/author.jpg"
 
 paginate:	5
