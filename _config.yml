@@ -4,24 +4,15 @@ highlighter: pygments
 
 # Site settings
 title: "my four line notebook"
-description: >  # the string will span several lines
-   package main
-   
-   import(
-      
-      "fmt"
-      
-      )
-      
-   var learn,share int =50,50
-   
-      func mastery() int{
-      
-      return learn+share
-      
-      }
-      
+description: >
+    This entire block of text will be the value of 'folded_style', but this
+    time, all newlines will be replaced with a single space.
 
+    Blank lines, like above, are converted to a newline character.
+
+        'More-indented' lines keep their newlines, too -
+        this text will appear over two lines. 
+     
 email: mailganesh@icloud.com
 #blog logo
 logo: "/assets/images/G.png"
