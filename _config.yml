@@ -4,7 +4,7 @@ highlighter: pygments
 
 # Site settings
 title: "my four line notebook"
-description:|  # the string will span several lines
+description: |  # the string will span several lines
    package main
    import(
       "fmt"
