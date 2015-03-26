@@ -4,7 +4,7 @@ highlighter: pygments
 
 # Site settings
 title: "my four line notebook"
-description: > # this means to ignore newlines until "email:"
+description:  # this means to ignore newlines until "email:"
    package main
    import(
       "fmt"
