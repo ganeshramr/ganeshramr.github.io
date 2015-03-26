@@ -4,13 +4,13 @@ highlighter: pygments
 
 # Site settings
 title: "my four line notebook"
-description:  # this means to ignore newlines until "email:"
+description:|  # the string will span several lines
    package main
    import(
       "fmt"
       )
    var learn,share int =50,50
-   func growth() int{
+   func mastery() int{
       return learn+share
       }
 
