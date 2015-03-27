@@ -5,7 +5,7 @@ highlighter: pygments
 # Site settings
 title: "my four line notebook"
 description:  # this means to ignore newlines until "email:"
-   just sharing what i learn
+   just sharing what i learn,as i learn
 email: mailganesh@icloud.com
 #blog logo
 logo: "/assets/images/G.png"
