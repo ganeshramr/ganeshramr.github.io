@@ -3,9 +3,9 @@ markdown: redcarpet
 highlighter: pygments
 
 # Site settings
-title: "my four line notebook"
+title: "bodhi"
 description:  # this means to ignore newlines until "email:"
-   just sharing what i learn,as i learn
+   learning is a continous process
 email: mailganesh@icloud.com
 #blog logo
 logo: "/assets/images/G.png"
