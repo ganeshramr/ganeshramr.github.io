@@ -3,9 +3,9 @@ markdown: redcarpet
 highlighter: pygments
 
 # Site settings
-title: "bodhi"
+title: "~bodhi~"
 description:  # this means to ignore newlines until "email:"
-   learning is a continous process
+   -learning is a continous process-
 email: mailganesh@icloud.com
 #blog logo
 logo: "/assets/images/G.png"
