@@ -1,7 +1,7 @@
 # Build settings
 markdown: redcarpet
 highlighter: pygments
-
+excerpt_separator: "" 
 # Site settings
 title: "~bodhi~"
 description:  # this means to ignore newlines until "email:"
@@ -39,7 +39,7 @@ social:
 
   - icon:	github
     url:	https://github.com/ganeshramr
-    desc:	
+    desc:
     share_url:
     share_title:
     share_link:
