@@ -2,10 +2,8 @@
 layout: post
 title:  "My view of dev ops landscape (draft)"
 date:   2015-07-06 14:06:00
-categories: normal
-tags:
-- devops
-- operations
+categories: devops
+tags: featured
 #image: /assets/article_images/gopher.jpeg
 comments: true
 ---
