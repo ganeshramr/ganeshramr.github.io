@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "My view of dev ops landscape (draft)"
+title:  "My view of dev ops landscape"
 date:   2015-07-06 14:06:00
 categories: devops
 tags: featured
