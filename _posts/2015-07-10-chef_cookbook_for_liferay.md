@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Chef Cookbook for Liferay"
-date:   2017-07-10 16:11:00
+date:   2015-07-10 16:11:00
 categories: devops
 tags:
 #image: /assets/article_images/gopher.jpeg

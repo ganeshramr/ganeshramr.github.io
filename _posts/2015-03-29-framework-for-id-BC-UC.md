@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "A framework for identifying a Blockchain Use case"
+title:  "Framework for identifying a Blockchain Use case"
 date:   2017-05-11 15:38:00
 categories: normal
 tags:
@@ -54,7 +54,6 @@ So it is important to know for your use case who your validators are and why you
 * You cannot make your data viewable to public
 
 * You cannot satisfactorily decide on the above discussed criteria
-
 
 ## Conclusion
 
