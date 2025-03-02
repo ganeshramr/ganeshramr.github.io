@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perceptron Demo: Cat Classifier</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f7f7f7;
+            --text-color: #333333;
+            --accent-color: #6288a5;
+            --secondary-color: #326891;
+            --error-color: #d14836;
+            --surface-color: #ffffff;
+            --card-color: #f1f1f1;
+            --border-color: #e2e2e2;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'nyt-cheltenham', Georgia, 'Times New Roman', serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        @font-face {
+            font-family: 'nyt-cheltenham';
+            src: url('https://g1.nyt.com/fonts/family/cheltenham/cheltenham-normal-300.woff2') format('woff2');
+            font-weight: 300;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'nyt-franklin';
+            src: url('https://g1.nyt.com/fonts/family/franklin/franklin-normal-500.woff2') format('woff2');
+            font-weight: 500;
+            font-style: normal;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+        
+        h1 {
+            font-family: 'nyt-cheltenham', Georgia, serif;
+            font-weight: 700;
+            font-size: 2.5rem;
+            color: var(--text-color);
+            letter-spacing: -0.5px;
+            margin-bottom: 0.5rem;
+        }
+        
+        h2, h3 {
+            font-family: 'nyt-cheltenham', Georgia, serif;
+            color: var(--secondary-color);
+            letter-spacing: -0.3px;
+        }
+        
+        p, li {
+            font-family: 'nyt-franklin', Arial, sans-serif;
+        }
+        
+        .perceptron-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .input-section, .weight-section, .output-section, .activation-section {
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+        }
+        
+        .input-section, .weight-section, .activation-section {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .output-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .input-item, .weight-item {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .input-item-content {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-icon {
+            color: var(--secondary-color);
+            width: 24px;
+            text-align: center;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-family: 'nyt-franklin', Arial, sans-serif;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--card-color);
+            transition: .4s;
+            border-radius: 34px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        input:checked + .slider {
+            background-color: var(--secondary-color);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .weight-slider {
+            width: 60%;
+            background: var(--card-color);
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            outline: none;
+            border: 1px solid var(--border-color);
+        }
+        
+        .weight-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .weight-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--secondary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .weight-value {
+            display: inline-block;
+            width: 40px;
+            text-align: right;
+            margin-left: 10px;
+            font-family: 'nyt-franklin', Arial, sans-serif;
+        }
+        
+        .perceptron-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+        }
+        
+        .dial-container {
+            width: 200px;
+            height: 200px;
+            position: relative;
+            margin: 30px auto;
+        }
+        
+        .dial {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(var(--secondary-color) 0% 50%, var(--error-color) 50% 100%);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        }
+        
+        .dial-inner {
+            width: 70%;
+            height: 70%;
+            border-radius: 50%;
+            background-color: var(--surface-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'nyt-franklin', Arial, sans-serif;
+            color: var(--secondary-color);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .dial-needle {
+            position: absolute;
+            width: 4px;
+            height: 50%;
+            background-color: #333;
+            bottom: 50%;
+            left: calc(50% - 2px);
+            transform-origin: bottom center;
+            transition: transform 0.5s ease-out;
+            z-index: 10;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+        
+        .dial-needle::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #333;
+            top: 0;
+            left: -3px;
+            border-radius: 50%;
+        }
+        
+        .dial-labels {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        
+        .dial-label {
+            position: absolute;
+            transform-origin: center;
+            text-align: center;
+            font-weight: bold;
+            font-family: 'nyt-franklin', Arial, sans-serif;
+        }
+        
+        .cat-label {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--secondary-color);
+        }
+        
+        .dog-label {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--error-color);
+        }
+        
+        .calculation {
+            background-color: var(--card-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            border: 1px solid var(--border-color);
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        
+        .result-text {
+            font-size: 24px;
+            margin-top: 20px;
+            text-align: center;
+            font-family: 'nyt-cheltenham', Georgia, serif;
+            font-weight: 700;
+        }
+        
+        .explanation {
+            background-color: var(--surface-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 30px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .reset-btn, .try-example-btn {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 20px;
+            font-family: 'nyt-franklin', Arial, sans-serif;
+            transition: background-color 0.3s;
+        }
+        
+        .reset-btn:hover, .try-example-btn:hover {
+            background-color: #1d4e75;
+        }
+        
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .bias-container {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        /* Block diagram styling */
+        .block-diagram {
+            margin: 40px auto;
+            max-width: 700px;
+            padding: 20px;
+            background-color: var(--surface-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+        }
+        
+        .diagram-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-family: 'nyt-cheltenham', Georgia, serif;
+        }
+        
+        .diagram-container {
+            position: relative;
+            height: 350px;
+        }
+        
+        .input-nodes, .output-node {
+            position: absolute;
+        }
+        
+        .input-nodes {
+            left: 0;
+            top: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
+        
+        .output-node {
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .node {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--card-color);
+            border: 2px solid var(--secondary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .node-label {
+            position: absolute;
+            left: -150px;
+            width: 140px;
+            text-align: right;
+            font-size: 0.85rem;
+        }
+        
+        .output-node .node-label {
+            left: auto;
+            right: -150px;
+            text-align: left;
+        }
+        
+        .summation-node {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: var(--card-color);
+            border: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .activation-box {
+            position: absolute;
+            left: 65%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 120px;
+            height: 60px;
+            border-radius: 8px;
+            background-color: var(--card-color);
+            border: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .connection-line {
+            position: absolute;
+            background-color: var(--text-color);
+            height: 2px;
+            transform-origin: 0 0;
+        }
+        
+        .connection-weight {
+            position: absolute;
+            background-color: var(--surface-color);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+        }
+        
+        .bias-node {
+            position: absolute;
+            left: 30%;
+            top: 18%;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--card-color);
+            border: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Radio button styling for activation functions */
+        .radio-container {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        
+        .radio-option {
+            flex: 1;
+            min-width: 110px;
+        }
+        
+        .radio-option input[type="radio"] {
+            display: none;
+        }
+        
+        .radio-option label {
+            display: block;
+            background-color: var(--card-color);
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 1px solid var(--border-color);
+        }
+        
+        .radio-option input[type="radio"]:checked + label {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .example-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .example-card {
+            background-color: var(--card-color);
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+        
+        .example-card:hover {
+            background-color: var(--border-color);
+        }
+        
+        .activation-function-graph {
+            width: 100%;
+            height: 120px;
+            margin-top: 15px;
+            background-color: var(--card-color);
+            border-radius: 4px;
+            padding: 10px;
+            box-sizing: border-box;
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+        
+        .graph-axis {
+            position: absolute;
+            background-color: var(--text-color);
+        }
+        
+        .x-axis {
+            width: calc(100% - 20px);
+            height: 1px;
+            bottom: 50%;
+            left: 10px;
+        }
+        
+        .y-axis {
+            width: 1px;
+            height: calc(100% - 20px);
+            left: 50%;
+            top: 10px;
+        }
+        
+        .activation-curve {
+            position: absolute;
+            width: calc(100% - 20px);
+            height: calc(100% - 20px);
+            top: 10px;
+            left: 10px;
+        }
+        
+        /* Dark mode toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+        
+        /* Dark mode */
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --accent-color: #bb86fc;
+            --secondary-color: #03dac6;
+            --error-color: #cf6679;
+            --surface-color: #1e1e1e;
+            --card-color: #2d2d2d;
+            --border-color: #3d3d3d;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="container">
+        <header>
+            <h1>Perceptron Demo: Cat vs. Not-Cat Classifier</h1>
+            <p>This interactive visualization shows how a simple neural network with a single neuron (Perceptron) works.</p>
+        </header>
+        
+        <div class="block-diagram">
+            <h2 class="diagram-title">Perceptron Architecture</h2>
+            <div class="diagram-container" id="perceptron-diagram">
+                <!-- This will be dynamically generated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="perceptron-container">
+            <div class="input-section">
+                <h2><i class="fas fa-sign-in-alt"></i> Inputs (Animal Characteristics)</h2>
+                <p>Toggle ON for YES, OFF for NO</p>
+                
+                <div class="input-item">
+                    <div class="input-item-content">
+                        <div class="input-icon"><i class="fas fa-cat"></i></div>
+                        <label for="input1">Has Pointy Ears</label>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="input1" onchange="updatePerceptron()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="input-item">
+                    <div class="input-item-content">
+                        <div class="input-icon"><i class="fas fa-volume-up"></i></div>
+                        <label for="input2">Makes Meowing Sounds</label>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="input2" onchange="updatePerceptron()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="input-item">
+                    <div class="input-item-content">
+                        <div class="input-icon"><i class="fas fa-hand-rock"></i></div>
+                        <label for="input3">Has Retractable Claws</label>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="input3" onchange="updatePerceptron()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="input-item">
+                    <div class="input-item-content">
+                        <div class="input-icon"><i class="fas fa-bullhorn"></i></div>
+                        <label for="input4">Barks</label>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="input4" onchange="updatePerceptron()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="input-item">
+                    <div class="input-item-content">
+                        <div class="input-icon"><i class="fas fa-paw"></i></div>
+                        <label for="input5">Wags Tail When Happy</label>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="input5" onchange="updatePerceptron()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="example-grid">
+                    <div class="example-card" onclick="loadExample('cat')">Load Cat Example</div>
+                    <div class="example-card" onclick="loadExample('dog')">Load Dog Example</div>
+                    <div class="example-card" onclick="loadExample('mix')">Load Mixed Example</div>
+                </div>
+            </div>
+            
+            <div class="weight-section">
+                <h2><i class="fas fa-balance-scale"></i> Weights</h2>
+                <p>Adjust the importance of each characteristic</p>
+                
+                <div class="weight-item">
+                    <label for="weight1">Weight for Pointy Ears:</label>
+                    <input type="range" min="-10" max="10" value="5" step="0.5" class="weight-slider" id="weight1" onchange="updatePerceptron()" oninput="updateWeightValue(this, 'weight1-value')">
+                    <span class="weight-value" id="weight1-value">5</span>
+                </div>
+                
+                <div class="weight-item">
+                    <label for="weight2">Weight for Meowing:</label>
+                    <input type="range" min="-10" max="10" value="8" step="0.5" class="weight-slider" id="weight2" onchange="updatePerceptron()" oninput="updateWeightValue(this, 'weight2-value')">
+                    <span class="weight-value" id="weight2-value">8</span>
+                </div>
+                
+                <div class="weight-item">
+                    <label for="weight3">Weight for Retractable Claws:</label>
+                    <input type="range" min="-10" max="10" value="6" step="0.5" class="weight-slider" id="weight3" onchange="updatePerceptron()" oninput="updateWeightValue(this, 'weight3-value')">
+                    <span class="weight-value" id="weight3-value">6</span>
+                </div>
+                
+                <div class="weight-item">
+                    <label for="weight4">Weight for Barking:</label>
+                    <input type="range" min="-10" max="10" value="-9" step="0.5" class="weight-slider" id="weight4" onchange="updatePerceptron()" oninput="updateWeightValue(this, 'weight4-value')">
+                    <span class="weight-value" id="weight4-value">-9</span>
+                </div>
+                
+                <div class="weight-item">
+                    <label for="weight5">Weight for Tail Wagging:</label>
+                    <input type="range" min="-10" max="10" value="-7" step="0.5" class="weight-slider" id="weight5" onchange="updatePerceptron()" oninput="updateWeightValue(this, 'weight5-value')">
+                    <span class="weight-value" id="weight5-value">-7</span>
+                </div>
+                
+                <div class="bias-container">
+                    <div class="weight-item">
+                        <label for="bias">Bias (Threshold Adjustment):</label>
+                        <input type="range" min="-15" max="15" value="-5" step="0.5" class="weight-slider" id="bias" onchange="updatePerceptron()" oninput="updateWeightValue(this, 'bias-value')">
+                        <span class="weight-value" id="bias-value">-5</span>
+                    </div>
+                </div>
+                
+                <div class="btn-container">
+                    <button class="reset-btn" onclick="resetDemo()">Reset Demo</button>
+                    <button class="try-example-btn" onclick="randomizeWeights()">Randomize Weights</button>
+                </div>
+            </div>
+            
+            <div class="activation-section">
+                <h2><i class="fas fa-bolt"></i> Activation Function</h2>
+                <p>Choose how the perceptron transforms input to output</p>
+                
+                <div class="radio-container">
+                    <div class="radio-option">
+                        <input type="radio" id="step" name="activation" value="step" checked onchange="updatePerceptron(); updateActivationGraph();">
+                        <label for="step">Step</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="sigmoid" name="activation" value="sigmoid" onchange="updatePerceptron(); updateActivationGraph();">
+                        <label for="sigmoid">Sigmoid</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="relu" name="activation" value="relu" onchange="updatePerceptron(); updateActivationGraph();">
+                        <label for="relu">ReLU</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="tanh" name="activation" value="tanh" onchange="updatePerceptron(); updateActivationGraph();">
+                        <label for="tanh">Tanh</label>
+                    </div>
+                </div>
+                
+                <div class="activation-function-graph" id="activation-graph">
+                    <div class="graph-axis x-axis"></div>
+                    <div class="graph-axis y-axis"></div>
+                    <svg class="activation-curve" id="activation-curve" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <!-- This will be filled by JavaScript -->
+                    </svg>
+                </div>
+                
+                <div class="activation-description" id="activation-description">
+                    <h3>Step Function</h3>
+                    <p>The Step function outputs 1 if the input is positive and 0 otherwise. This is the classic perceptron activation function.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="output-section">
+            <h2><i class="fas fa-chart-pie"></i> Perceptron Output</h2>
+            
+            <div class="dial-container">
+                <div class="dial">
+                    <div class="dial-inner" id="output-value">0</div>
+                </div>
+                <div class="dial-needle" id="needle"></div>
+                <div class="dial-labels">
+                    <div class="dial-label cat-label">CAT</div>
+                    <div class="dial-label dog-label">NOT CAT</div>
+                </div>
+            </div>
+            
+            <div class="result-text" id="result-text">Waiting for input...</div>
+            
+            <div class="calculation" id="calculation">Calculation will appear here...</div>
+        </div>
+        
+        <div class="explanation">
+            <h2>How a Perceptron Works</h2>
+            <p>A Perceptron is the simplest type of artificial neural network. It's a model of a single neuron that was developed in the 1950s and forms the foundation for more complex neural networks.</p>
+            
+            <h3>Key Components:</h3>
+            <ol>
+                <li><strong>Inputs:</strong> Binary (0 or 1) values representing features or characteristics</li>
+                <li><strong>Weights:</strong> Values that determine how important each input is for classification</li>
+                <li><strong>Bias:</strong> A threshold adjustment that helps the model make better decisions</li>
+                <li><strong>Activation Function:</strong> A mathematical function that determines the output</li>
+            </ol>
+            
+            <h3>How to Use This Demo:</h3>
+            <ol>
+                <li>Toggle the input switches ON (1) or OFF (0) to set animal characteristics</li>
+                <li>Adjust the weights using sliders to change the importance of each characteristic</li>
+                <li>Adjust the bias to change the decision threshold</li>
+                <li>Select an activation function to see how it affects the output</li>
+                <li>Watch how the dial output changes based on your inputs and weights</li>
+            </ol>
+            
+            <h3>Activation Functions:</h3>
+            <ul>
+                <li><strong>Step:</strong> Outputs 1 if the weighted sum is positive, 0 otherwise. The classic perceptron function.</li>
+                <li><strong>Sigmoid:</strong> Squashes the output between 0 and 1, with
+                    <li><strong>Sigmoid:</strong> A smooth S-shaped function that outputs values between 0 and 1, often used in neural networks.</li>
+                    <li><strong>ReLU (Rectified Linear Unit):</strong> Outputs the input directly if it's positive, otherwise outputs 0. Popular in modern neural networks.</li>
+                    <li><strong>Tanh:</strong> Similar to sigmoid but outputs values between -1 and 1.</li>
+                </ul>
+                
+                <h3>The Formula:</h3>
+                <p>The perceptron calculates its output using this process:</p>
+                <ol>
+                    <li>Multiply each input by its corresponding weight</li>
+                    <li>Sum all these products</li>
+                    <li>Add the bias</li>
+                    <li>Apply the activation function to this sum</li>
+                </ol>
+                <p>Mathematically: output = activation(∑(input_i × weight_i) + bias)</p>
+            </div>
+        </div>
+        
+        <script>
+            // Initialize the diagram when the page loads
+            window.onload = function() {
+                createPerceptronDiagram();
+                updateActivationGraph();
+                updatePerceptron();
+            };
+            
+            // Toggle between light and dark mode
+            function toggleTheme() {
+                document.body.classList.toggle('dark-mode');
+                const themeIcon = document.querySelector('.theme-toggle i');
+                if (document.body.classList.contains('dark-mode')) {
+                    themeIcon.classList.remove('fa-moon');
+                    themeIcon.classList.add('fa-sun');
+                } else {
+                    themeIcon.classList.remove('fa-sun');
+                    themeIcon.classList.add('fa-moon');
+                }
+                updatePerceptronDiagram();
+            }
+            
+            // Update weight value display
+            function updateWeightValue(slider, outputId) {
+                document.getElementById(outputId).textContent = slider.value;
+            }
+            
+            // Load predefined examples
+            function loadExample(type) {
+                // Reset all inputs first
+                for (let i = 1; i <= 5; i++) {
+                    document.getElementById(`input${i}`).checked = false;
+                }
+                
+                // Set inputs based on example type
+                switch(type) {
+                    case 'cat':
+                        document.getElementById('input1').checked = true; // Pointy ears
+                        document.getElementById('input2').checked = true; // Meows
+                        document.getElementById('input3').checked = true; // Retractable claws
+                        document.getElementById('input4').checked = false; // Doesn't bark
+                        document.getElementById('input5').checked = false; // Doesn't wag tail
+                        break;
+                    case 'dog':
+                        document.getElementById('input1').checked = true; // Pointy ears (some dogs)
+                        document.getElementById('input2').checked = false; // Doesn't meow
+                        document.getElementById('input3').checked = false; // No retractable claws
+                        document.getElementById('input4').checked = true; // Barks
+                        document.getElementById('input5').checked = true; // Wags tail
+                        break;
+                    case 'mix':
+                        document.getElementById('input1').checked = true; // Pointy ears
+                        document.getElementById('input2').checked = true; // Meows (unusual dog or cat-like sound)
+                        document.getElementById('input3').checked = false; // No retractable claws
+                        document.getElementById('input4').checked = true; // Barks
+                        document.getElementById('input5').checked = true; // Wags tail
+                        break;
+                }
+                
+                updatePerceptron();
+            }
+            
+            // Reset the demo to default values
+            function resetDemo() {
+                // Reset inputs
+                for (let i = 1; i <= 5; i++) {
+                    document.getElementById(`input${i}`).checked = false;
+                }
+                
+                // Reset weights
+                document.getElementById('weight1').value = 5;
+                document.getElementById('weight1-value').textContent = '5';
+                
+                document.getElementById('weight2').value = 8;
+                document.getElementById('weight2-value').textContent = '8';
+                
+                document.getElementById('weight3').value = 6;
+                document.getElementById('weight3-value').textContent = '6';
+                
+                document.getElementById('weight4').value = -9;
+                document.getElementById('weight4-value').textContent = '-9';
+                
+                document.getElementById('weight5').value = -7;
+                document.getElementById('weight5-value').textContent = '-7';
+                
+                document.getElementById('bias').value = -5;
+                document.getElementById('bias-value').textContent = '-5';
+                
+                // Reset activation function
+                document.getElementById('step').checked = true;
+                
+                updateActivationGraph();
+                updatePerceptron();
+            }
+            
+            // Randomize weights for experimentation
+            function randomizeWeights() {
+                for (let i = 1; i <= 5; i++) {
+                    const randomValue = Math.round((Math.random() * 20 - 10) * 2) / 2; // Random value between -10 and 10 with 0.5 step
+                    document.getElementById(`weight${i}`).value = randomValue;
+                    document.getElementById(`weight${i}-value`).textContent = randomValue;
+                }
+                
+                const randomBias = Math.round((Math.random() * 30 - 15) * 2) / 2; // Random value between -15 and 15 with 0.5 step
+                document.getElementById('bias').value = randomBias;
+                document.getElementById('bias-value').textContent = randomBias;
+                
+                updatePerceptron();
+            }
+            
+            // Update the activation function graph
+            function updateActivationGraph() {
+                const svg = document.getElementById('activation-curve');
+                const activationType = document.querySelector('input[name="activation"]:checked').value;
+                
+                // Clear previous path
+                svg.innerHTML = '';
+                
+                // Create new path based on selected activation function
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', getComputedStyle(document.documentElement).getPropertyValue('--secondary-color'));
+                path.setAttribute('stroke-width', '2');
+                
+                let d = '';
+                
+                // Generate path data based on activation function
+                switch(activationType) {
+                    case 'step':
+                        d = 'M 0 50 L 50 50 L 50 0 L 100 0';
+                        break;
+                    case 'sigmoid':
+                        for (let x = 0; x <= 100; x++) {
+                            const normalizedX = (x - 50) / 10;
+                            const y = 100 - (100 / (1 + Math.exp(-normalizedX)));
+                            if (x === 0) {
+                                d += `M ${x} ${y}`;
+                            } else {
+                                d += ` L ${x} ${y}`;
+                            }
+                        }
+                        break;
+                    case 'relu':
+                        d = 'M 0 50 L 50 50 L 100 0';
+                        break;
+                    case 'tanh':
+                        for (let x = 0; x <= 100; x++) {
+                            const normalizedX = (x - 50) / 10;
+                            const y = 50 - 50 * Math.tanh(normalizedX);
+                            if (x === 0) {
+                                d += `M ${x} ${y}`;
+                            } else {
+                                d += ` L ${x} ${y}`;
+                            }
+                        }
+                        break;
+                }
+                
+                path.setAttribute('d', d);
+                svg.appendChild(path);
+                
+                // Update activation description
+                const descriptionElement = document.getElementById('activation-description');
+                
+                switch(activationType) {
+                    case 'step':
+                        descriptionElement.innerHTML = `
+                            <h3>Step Function</h3>
+                            <p>The Step function outputs 1 if the input is positive and 0 otherwise. This is the classic perceptron activation function.</p>
+                        `;
+                        break;
+                    case 'sigmoid':
+                        descriptionElement.innerHTML = `
+                            <h3>Sigmoid Function</h3>
+                            <p>The Sigmoid function outputs values between 0 and 1, creating a smooth S-shaped curve. It's often used in neural networks for binary classification.</p>
+                        `;
+                        break;
+                    case 'relu':
+                        descriptionElement.innerHTML = `
+                            <h3>ReLU Function</h3>
+                            <p>The Rectified Linear Unit (ReLU) outputs the input directly if it's positive, otherwise outputs 0. It's widely used in modern neural networks for its computational efficiency.</p>
+                        `;
+                        break;
+                    case 'tanh':
+                        descriptionElement.innerHTML = `
+                            <h3>Tanh Function</h3>
+                            <p>The Hyperbolic Tangent (Tanh) function is similar to sigmoid but outputs values between -1 and 1. It's often preferred over sigmoid for hidden layers in neural networks.</p>
+                        `;
+                        break;
+                }
+            }
+            
+            // Create the perceptron diagram
+            function createPerceptronDiagram() {
+                const diagramContainer = document.getElementById('perceptron-diagram');
+                const inputs = 5;
+                
+                // Clear previous diagram
+                diagramContainer.innerHTML = '';
+                
+                // Create input nodes
+                const inputNodesDiv = document.createElement('div');
+                inputNodesDiv.className = 'input-nodes';
+                
+                for (let i = 1; i <= inputs; i++) {
+                    const nodeDiv = document.createElement('div');
+                    nodeDiv.className = 'node';
+                    nodeDiv.id = `diagram-input-${i}`;
+                    nodeDiv.innerHTML = `x<sub>${i}</sub>`;
+                    
+                    const nodeLabel = document.createElement('div');
+                    nodeLabel.className = 'node-label';
+                    
+                    switch(i) {
+                        case 1: nodeLabel.textContent = 'Pointy Ears'; break;
+                        case 2: nodeLabel.textContent = 'Meowing'; break;
+                        case 3: nodeLabel.textContent = 'Retractable Claws'; break;
+                        case 4: nodeLabel.textContent = 'Barks'; break;
+                        case 5: nodeLabel.textContent = 'Wags Tail'; break;
+                    }
+                    
+                    nodeDiv.appendChild(nodeLabel);
+                    inputNodesDiv.appendChild(nodeDiv);
+                }
+                
+                diagramContainer.appendChild(inputNodesDiv);
+                
+                // Create bias node
+                const biasNode = document.createElement('div');
+                biasNode.className = 'bias-node';
+                biasNode.id = 'diagram-bias';
+                biasNode.textContent = 'b';
+                diagramContainer.appendChild(biasNode);
+                
+                // Create summation node
+                const summationNode = document.createElement('div');
+                summationNode.className = 'summation-node';
+                summationNode.innerHTML = '&Sigma;';
+                diagramContainer.appendChild(summationNode);
+                
+                // Create activation box
+                const activationBox = document.createElement('div');
+                activationBox.className = 'activation-box';
+                activationBox.id = 'diagram-activation';
+                activationBox.textContent = 'Step Function';
+                diagramContainer.appendChild(activationBox);
+                
+                // Create output node
+                const outputNodeDiv = document.createElement('div');
+                outputNodeDiv.className = 'output-node';
+                
+                const outputNode = document.createElement('div');
+                outputNode.className = 'node';
+                outputNode.id = 'diagram-output';
+                outputNode.textContent = 'y';
+                
+                const outputLabel = document.createElement('div');
+                outputLabel.className = 'node-label';
+                outputLabel.textContent = 'Cat or Not Cat';
+                
+                outputNode.appendChild(outputLabel);
+                outputNodeDiv.appendChild(outputNode);
+                diagramContainer.appendChild(outputNodeDiv);
+                
+                // Create connection lines
+                // From inputs to summation
+                for (let i = 1; i <= inputs; i++) {
+                    const inputNode = document.getElementById(`diagram-input-${i}`);
+                    const inputRect = inputNode.getBoundingClientRect();
+                    const summationRect = summationNode.getBoundingClientRect();
+                    
+                    const line = document.createElement('div');
+                    line.className = 'connection-line';
+                    line.id = `connection-${i}`;
+                    
+                    // Position and rotate the line
+                    const x1 = inputRect.right - diagramContainer.getBoundingClientRect().left;
+                    const y1 = inputRect.top + inputRect.height/2 - diagramContainer.getBoundingClientRect().top;
+                    const x2 = summationRect.left - diagramContainer.getBoundingClientRect().left;
+                    const y2 = summationRect.top + summationRect.height/2 - diagramContainer.getBoundingClientRect().top;
+                    
+                    const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                    
+                    line.style.width = `${length}px`;
+                    line.style.left = `${x1}px`;
+                    line.style.top = `${y1}px`;
+                    line.style.transform = `rotate(${angle}deg)`;
+                    
+                    diagramContainer.appendChild(line);
+                    
+                    // Add weight label
+                    const weight = document.createElement('div');
+                    weight.className = 'connection-weight';
+                    weight.id = `weight-label-${i}`;
+                    weight.textContent = `w${i}`;
+                    
+                    // Position the weight label in the middle of the line
+                    weight.style.left = `${x1 + (x2 - x1) / 2 - 15}px`;
+                    weight.style.top = `${y1 + (y2 - y1) / 2 - 10}px`;
+                    
+                    diagramContainer.appendChild(weight);
+                }
+                
+                // From bias to summation
+                const biasRect = biasNode.getBoundingClientRect();
+                const summationRect = summationNode.getBoundingClientRect();
+                
+                const biasLine = document.createElement('div');
+                biasLine.className = 'connection-line';
+                biasLine.id = 'connection-bias';
+                
+                const bx1 = biasRect.right - diagramContainer.getBoundingClientRect().left;
+                const by1 = biasRect.top + biasRect.height/2 - diagramContainer.getBoundingClientRect().top;
+                const bx2 = summationRect.left - diagramContainer.getBoundingClientRect().left;
+                const by2 = summationRect.top + summationRect.height/2 - diagramContainer.getBoundingClientRect().top;
+                
+                const biasLength = Math.sqrt(Math.pow(bx2 - bx1, 2) + Math.pow(by2 - by1, 2));
+                const biasAngle = Math.atan2(by2 - by1, bx2 - bx1) * 180 / Math.PI;
+                
+                biasLine.style.width = `${biasLength}px`;
+                biasLine.style.left = `${bx1}px`;
+                biasLine.style.top = `${by1}px`;
+                biasLine.style.transform = `rotate(${biasAngle}deg)`;
+                
+                diagramContainer.appendChild(biasLine);
+                
+                // From summation to activation
+                const summToActiveLine = document.createElement('div');
+                summToActiveLine.className = 'connection-line';
+                
+                const activationRect = activationBox.getBoundingClientRect();
+                
+                const sx1 = summationRect.right - diagramContainer.getBoundingClientRect().left;
+                const sy1 = summationRect.top + summationRect.height/2 - diagramContainer.getBoundingClientRect().top;
+                const sx2 = activationRect.left - diagramContainer.getBoundingClientRect().left;
+                const sy2 = activationRect.top + activationRect.height/2 - diagramContainer.getBoundingClientRect().top;
+                
+                const summToActiveLength = Math.sqrt(Math.pow(sx2 - sx1, 2) + Math.pow(sy2 - sy1, 2));
+                const summToActiveAngle = Math.atan2(sy2 - sy1, sx2 - sx1) * 180 / Math.PI;
+                
+                summToActiveLine.style.width = `${summToActiveLength}px`;
+                summToActiveLine.style.left = `${sx1}px`;
+                summToActiveLine.style.top = `${sy1}px`;
+                summToActiveLine.style.transform = `rotate(${summToActiveAngle}deg)`;
+                
+                diagramContainer.appendChild(summToActiveLine);
+                
+                // From activation to output
+                const activeToOutputLine = document.createElement('div');
+                activeToOutputLine.className = 'connection-line';
+                
+                const outputRect = document.getElementById('diagram-output').getBoundingClientRect();
+                
+                const ax1 = activationRect.right - diagramContainer.getBoundingClientRect().left;
+                const ay1 = activationRect.top + activationRect.height/2 - diagramContainer.getBoundingClientRect().top;
+                const ax2 = outputRect.left - diagramContainer.getBoundingClientRect().left;
+                const ay2 = outputRect.top + outputRect.height/2 - diagramContainer.getBoundingClientRect().top;
+                
+                const activeToOutputLength = Math.sqrt(Math.pow(ax2 - ax1, 2) + Math.pow(ay2 - ay1, 2));
+                const activeToOutputAngle = Math.atan2(ay2 - ay1, ax2 - ax1) * 180 / Math.PI;
+                
+                activeToOutputLine.style.width = `${activeToOutputLength}px`;
+                activeToOutputLine.style.left = `${ax1}px`;
+                activeToOutputLine.style.top = `${ay1}px`;
+                activeToOutputLine.style.transform = `rotate(${activeToOutputAngle}deg)`;
+                
+                diagramContainer.appendChild(activeToOutputLine);
+            }
+            
+            // Update the perceptron diagram based on current weights and inputs
+            function updatePerceptronDiagram() {
+                // Update activation function label
+                const activationType = document.querySelector('input[name="activation"]:checked').value;
+                const activationNode = document.getElementById('diagram-activation');
+                
+                switch(activationType) {
+                    case 'step':
+                        activationNode.textContent = 'Step Function';
+                        break;
+                    case 'sigmoid':
+                        activationNode.textContent = 'Sigmoid Function';
+                        break;
+                    case 'relu':
+                        activationNode.textContent = 'ReLU Function';
+                        break;
+                    case 'tanh':
+                        activationNode.textContent = 'Tanh Function';
+                        break;
+                }
+                
+                // Update weight labels
+                for (let i = 1; i <= 5; i++) {
+                    const weightValue = document.getElementById(`weight${i}`).value;
+                    const weightLabel = document.getElementById(`weight-label-${i}`);
+                    weightLabel.textContent = weightValue;
+                    
+                    // Update color based on weight value
+                    if (weightValue > 0) {
+                        weightLabel.style.color = getComputedStyle(document.documentElement).getPropertyValue('--secondary-color');
+                    } else if (weightValue < 0) {
+                        weightLabel.style.color = getComputedStyle(document.documentElement).getPropertyValue('--error-color');
+                    } else {
+                        weightLabel.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
+                    }
+                }
+                
+                // Update input nodes based on checkbox status
+                for (let i = 1; i <= 5; i++) {
+                    const inputNode = document.getElementById(`diagram-input-${i}`);
+                    const isChecked = document.getElementById(`input${i}`).checked;
+                    
+                    if (isChecked) {
+                        inputNode.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-color');
+                        inputNode.style.color = 'white';
+                    } else {
+                        inputNode.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--card-color');
+                        inputNode.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
+                    }
+                }
+                
+                // Update output based on calculation
+                const outputNode = document.getElementById('diagram-output');
+                const outputValue = document.getElementById('output-value').textContent;
+                
+                if (outputValue == 1) {
+                    outputNode.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-color');
+                    outputNode.style.color = 'white';
+                } else {
+                    outputNode.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--card-color');
+                    outputNode.style.color = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
+                }
+            }
+            
+            // Main function to update perceptron calculations and display
+            function updatePerceptron() {
+                // Get inputs
+                const inputs = [];
+                for (let i = 1; i <= 5; i++) {
+                    inputs.push(document.getElementById(`input${i}`).checked ? 1 : 0);
+                }
+                
+                // Get weights
+                const weights = [];
+                for (let i = 1; i <= 5; i++) {
+                    weights.push(parseFloat(document.getElementById(`weight${i}`).value));
+                }
+                
+                // Get bias
+                const bias = parseFloat(document.getElementById('bias').value);
+                
+                // Get activation function
+                const activationType = document.querySelector('input[name="activation"]:checked').value;
+                
+                // Calculate weighted sum
+                let weightedSum = bias;
+                let calculationText = `Calculation:\n`;
+                calculationText += `Weighted Sum = Bias + Σ(Input_i × Weight_i)\n`;
+                calculationText += `Weighted Sum = ${bias}`;
+                
+                for (let i = 0; i < inputs.length; i++) {
+                    const product = inputs[i] * weights[i];
+                    weightedSum += product;
+                    
+                    if (inputs[i] === 1) {
+                        calculationText += ` + (${inputs[i]} × ${weights[i]})`;
+                    }
+                }
+                
+                calculationText += `\nWeighted Sum = ${weightedSum.toFixed(2)}\n\n`;
+                
+                // Apply activation function
+                let output;
+                switch(activationType) {
+                    case 'step':
+                        output = weightedSum > 0 ? 1 : 0;
+                        calculationText += `Activation Function: Step\n`;
+                        calculationText += `Output = ${weightedSum.toFixed(2)} > 0 ? 1 : 0\n`;
+                        calculationText += `Output = ${output}`;
+                        break;
+                    case 'sigmoid':
+                        output = 1 / (1 + Math.exp(-weightedSum));
+                        calculationText += `Activation Function: Sigmoid\n`;
+                        calculationText += `Output = 1 / (1 + e^(-${weightedSum.toFixed(2)}))\n`;
+                        calculationText += `Output = ${output.toFixed(4)}`;
+                        break;
+                    case 'relu':
+                        output = Math.max(0, weightedSum);
+                        calculationText += `Activation Function: ReLU\n`;
+                        calculationText += `Output = max(0, ${weightedSum.toFixed(2)})\n`;
+                        calculationText += `Output = ${output.toFixed(2)}`;
+                        break;
+                    case 'tanh':
+                        output = Math.tanh(weightedSum);
+                        calculationText += `Activation Function: Tanh\n`;
+                        calculationText += `Output = tanh(${weightedSum.toFixed(2)})\n`;
+                        calculationText += `Output = ${output.toFixed(4)}`;
+                        break;
+                }
+                
+                // Update calculation display
+                document.getElementById('calculation').textContent = calculationText;
+                
+                // Update the output value display
+                document.getElementById('output-value').textContent = activationType === 'step' ? output : output.toFixed(2);
+                
+                // Update the result text
+                let resultText;
+                if (activationType === 'step') {
+                    resultText = output === 1 ? "This is a CAT!" : "This is NOT a cat.";
+                } else if (activationType === 'tanh') {
+                    if (output > 0.5) resultText = "This is likely a CAT!";
+                    else if (output > 0) resultText = "This might be a CAT, but I'm not sure.";
+                    else if (output > -0.5) resultText = "This is probably NOT a cat, but I'm not sure.";
+                    else resultText = "This is definitely NOT a cat.";
+                } else { // sigmoid or relu
+                    if (output > 0.8) resultText = "This is definitely a CAT!";
+                    else if (output > 0.5) resultText = "This is probably a CAT.";
+                    else if (output > 0.2) resultText = "This is probably NOT a cat.";
+                    else resultText = "This is definitely NOT a cat.";
+                }
+                
+                document.getElementById('result-text').textContent = resultText;
+                
+                // Update the dial needle
+                let angle;
+                if (activationType === 'step') {
+                    angle = output === 1 ? -90 : 90;
+                } else if (activationType === 'tanh') {
+                    // Convert from -1...1 to -90...90
+                    angle = -output * 90;
+                } else { // sigmoid or relu normalized
+                    // Convert from 0...1 to -90...90 for sigmoid
+                    // For relu, we need to normalize it first
+                    let normalizedOutput;
+                    if (activationType === 'sigmoid') {
+                        normalizedOutput = output;
+                    } else { // relu
+                        // Normalize to 0...1 with a cap at 10
+                        normalizedOutput = Math.min(output, 10) / 10;
+                    }
+                    angle = 90 - (normalizedOutput * 180);
+                }
+                
+                document.getElementById('needle').style.transform = `rotate(${angle}deg)`;
+                
+                // Update the perceptron diagram
+                updatePerceptronDiagram();
+            }
+        </script>
+    </body>
+    </html>
