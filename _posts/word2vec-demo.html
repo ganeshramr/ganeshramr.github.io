@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word2Vec Interactive Demo</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .row {
+            display: flex;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            flex: 1;
+        }
+        #vectorPlot {
+            width: 100%;
+            height: 500px;
+            background-color: #fff;
+            border-radius: 8px;
+        }
+        select, button, input {
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .word-chip {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .example-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .formula {
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .formula > * {
+            margin: 0 5px;
+        }
+        .formula-word {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .selected-words {
+            min-height: 50px;
+            margin-bottom: 20px;
+        }
+        #result {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Word2Vec Interactive Demo</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Word Vector Visualization</h2>
+            <p>Select words to see their relationships in vector space. Try classic examples like "king - man + woman = queen".</p>
+            
+            <div class="formula">
+                <span class="formula-word" style="background-color: #ff9999;" id="word1Disp">Select Word 1</span>
+                <span>−</span>
+                <span class="formula-word" style="background-color: #99ccff;" id="word2Disp">Select Word 2</span>
+                <span>+</span>
+                <span class="formula-word" style="background-color: #99ff99;" id="word3Disp">Select Word 3</span>
+                <span>=</span>
+                <span class="formula-word" style="background-color: #ffcc99;" id="resultWord">?</span>
+            </div>
+            
+            <div id="result">Select words to see the calculation result</div>
+            
+            <div>
+                <h3>Common Words</h3>
+                <div class="example-container" id="commonWords"></div>
+            </div>
+            
+            <div>
+                <h3>Classic Examples</h3>
+                <button class="example-btn" data-example="king,man,woman">king - man + woman = ?</button>
+                <button class="example-btn" data-example="paris,france,italy">paris - france + italy = ?</button>
+                <button class="example-btn" data-example="einstein,scientist,artist">einstein - scientist + artist = ?</button>
+                <button class="example-btn" data-example="good,bad,cold">good - bad + cold = ?</button>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div id="vectorPlot"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script>
+        // Sample word embeddings (simplified 2D projections)
+        // In a real implementation, these would be actual word vectors from a trained model
+        const wordVectors = {
+            "king": [2.1, 1.8],
+            "queen": [2.0, -1.9],
+            "man": [1.5, 1.6],
+            "woman": [1.4, -1.7],
+            "boy": [0.9, 1.2],
+            "girl": [0.8, -1.3],
+            "father": [1.7, 1.4],
+            "mother": [1.6, -1.5],
+            "prince": [1.9, 1.7],
+            "princess": [1.8, -1.8],
+            "brother": [1.3, 1.3],
+            "sister": [1.2, -1.4],
+            "uncle": [1.6, 1.2],
+            "aunt": [1.5, -1.3],
+            "paris": [-2.1, 0.5],
+            "france": [-1.8, 1.7],
+            "rome": [-2.0, 0.6],
+            "italy": [-1.7, 1.8],
+            "berlin": [-1.9, 0.4],
+            "germany": [-1.6, 1.6],
+            "moscow": [-2.2, 0.3],
+            "russia": [-1.9, 1.5],
+            "tokyo": [-2.1, 0.2],
+            "japan": [-1.8, 1.4],
+            "einstein": [0.2, 2.2],
+            "scientist": [0.5, 1.9],
+            "picasso": [0.3, -2.1],
+            "artist": [0.6, -1.8],
+            "mozart": [0.4, -2.0],
+            "composer": [0.7, -1.7],
+            "good": [-0.8, -0.5],
+            "bad": [-0.9, 0.6],
+            "hot": [-0.7, -0.4],
+            "cold": [-0.6, 0.5],
+            "large": [-0.5, -0.6],
+            "small": [-0.4, 0.7]
+        };
+        
+        // Colors for different word categories
+        const colorMap = {
+            // Royalty
+            "king": "#ff9966", "queen": "#ff9966", "prince": "#ff9966", "princess": "#ff9966",
+            // Gender
+            "man": "#6699ff", "woman": "#ff66cc", "boy": "#6699ff", "girl": "#ff66cc", 
+            "father": "#6699ff", "mother": "#ff66cc", "brother": "#6699ff", "sister": "#ff66cc",
+            "uncle": "#6699ff", "aunt": "#ff66cc",
+            // Countries
+            "france": "#66ccff", "italy": "#66ccff", "germany": "#66ccff", "russia": "#66ccff", "japan": "#66ccff",
+            // Cities
+            "paris": "#ff66ff", "rome": "#ff66ff", "berlin": "#ff66ff", "moscow": "#ff66ff", "tokyo": "#ff66ff",
+            // Professions
+            "scientist": "#99cc66", "artist": "#cc99ff", "composer": "#cc99ff",
+            // Famous people
+            "einstein": "#ffcc66", "picasso": "#ffcc66", "mozart": "#ffcc66",
+            // Adjectives
+            "good": "#66ffcc", "bad": "#66ffcc", "hot": "#66ffcc", "cold": "#66ffcc", 
+            "large": "#66ffcc", "small": "#66ffcc"
+        };
+        
+        // Initialize DOM elements
+        const commonWords = document.getElementById('commonWords');
+        const plot = document.getElementById('vectorPlot');
+        const word1Disp = document.getElementById('word1Disp');
+        const word2Disp = document.getElementById('word2Disp');
+        const word3Disp = document.getElementById('word3Disp');
+        const resultWord = document.getElementById('resultWord');
+        const resultDiv = document.getElementById('result');
+        
+        // Variables to store the selected words
+        let selectedWord1 = null;
+        let selectedWord2 = null;
+        let selectedWord3 = null;
+        let calculatedResult = null;
+        
+        // Populate common words
+        Object.keys(wordVectors).forEach(word => {
+            const chip = document.createElement('div');
+            chip.className = 'word-chip';
+            chip.textContent = word;
+            chip.style.backgroundColor = colorMap[word] || '#dddddd';
+            chip.style.color = getContrastColor(colorMap[word] || '#dddddd');
+            chip.addEventListener('click', () => selectWord(word));
+            commonWords.appendChild(chip);
+        });
+        
+        // Set up example buttons
+        document.querySelectorAll('.example-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const [w1, w2, w3] = btn.dataset.example.split(',');
+                resetSelection();
+                setTimeout(() => {
+                    selectWord(w1);
+                    setTimeout(() => {
+                        selectWord(w2);
+                        setTimeout(() => {
+                            selectWord(w3);
+                        }, 500);
+                    }, 500);
+                }, 500);
+            });
+        });
+        
+        // Word selection function
+        function selectWord(word) {
+            if (!selectedWord1) {
+                selectedWord1 = word;
+                word1Disp.textContent = word;
+                word1Disp.style.backgroundColor = colorMap[word] || '#dddddd';
+                word1Disp.style.color = getContrastColor(colorMap[word] || '#dddddd');
+            } else if (!selectedWord2) {
+                selectedWord2 = word;
+                word2Disp.textContent = word;
+                word2Disp.style.backgroundColor = colorMap[word] || '#dddddd';
+                word2Disp.style.color = getContrastColor(colorMap[word] || '#dddddd');
+            } else if (!selectedWord3) {
+                selectedWord3 = word;
+                word3Disp.textContent = word;
+                word3Disp.style.backgroundColor = colorMap[word] || '#dddddd';
+                word3Disp.style.color = getContrastColor(colorMap[word] || '#dddddd');
+                
+                // Calculate and display the result
+                calculateResult();
+            }
+            
+            // Update the plot
+            drawPlot();
+        }
+        
+        // Calculate result of word vector operation
+        function calculateResult() {
+            if (selectedWord1 && selectedWord2 && selectedWord3) {
+                const vec1 = wordVectors[selectedWord1];
+                const vec2 = wordVectors[selectedWord2];
+                const vec3 = wordVectors[selectedWord3];
+                
+                // Calculate result vector: vec1 - vec2 + vec3
+                const resultVector = [
+                    vec1[0] - vec2[0] + vec3[0],
+                    vec1[1] - vec2[1] + vec3[1]
+                ];
+                
+                // Find the closest word
+                let closestWord = null;
+                let closestDistance = Infinity;
+                
+                Object.entries(wordVectors).forEach(([word, vector]) => {
+                    if (word !== selectedWord1 && word !== selectedWord2 && word !== selectedWord3) {
+                        const distance = Math.sqrt(
+                            Math.pow(vector[0] - resultVector[0], 2) + 
+                            Math.pow(vector[1] - resultVector[1], 2)
+                        );
+                        
+                        if (distance < closestDistance) {
+                            closestDistance = distance;
+                            closestWord = word;
+                        }
+                    }
+                });
+                
+                calculatedResult = {
+                    word: closestWord,
+                    vector: resultVector
+                };
+                
+                resultWord.textContent = closestWord;
+                resultWord.style.backgroundColor = colorMap[closestWord] || '#dddddd';
+                resultWord.style.color = getContrastColor(colorMap[closestWord] || '#dddddd');
+                
+                resultDiv.textContent = `${selectedWord1} - ${selectedWord2} + ${selectedWord3} ≈ ${closestWord}`;
+                
+                // Update the plot
+                drawPlot();
+            }
+        }
+        
+        // Reset selection
+        function resetSelection() {
+            selectedWord1 = null;
+            selectedWord2 = null;
+            selectedWord3 = null;
+            calculatedResult = null;
+            
+            word1Disp.textContent = 'Select Word 1';
+            word2Disp.textContent = 'Select Word 2';
+            word3Disp.textContent = 'Select Word 3';
+            resultWord.textContent = '?';
+            
+            word1Disp.style.backgroundColor = '#ff9999';
+            word2Disp.style.backgroundColor = '#99ccff';
+            word3Disp.style.backgroundColor = '#99ff99';
+            resultWord.style.backgroundColor = '#ffcc99';
+            
+            word1Disp.style.color = getContrastColor('#ff9999');
+            word2Disp.style.color = getContrastColor('#99ccff');
+            word3Disp.style.color = getContrastColor('#99ff99');
+            resultWord.style.color = getContrastColor('#ffcc99');
+            
+            resultDiv.textContent = 'Select words to see the calculation result';
+            
+            drawPlot();
+        }
+        
+        // Draw the plot
+        function drawPlot() {
+            // Clear the plot
+            plot.innerHTML = '';
+            
+            // Create SVG element
+            const svg = d3.select('#vectorPlot').append('svg')
+                .attr('width', '100%')
+                .attr('height', '100%')
+                .attr('viewBox', '-3 -3 6 6')
+                .attr('preserveAspectRatio', 'xMidYMid meet');
+            
+            // Draw axes
+            svg.append('line')
+                .attr('x1', -3)
+                .attr('y1', 0)
+                .attr('x2', 3)
+                .attr('y2', 0)
+                .attr('stroke', '#aaa')
+                .attr('stroke-width', 0.02);
+            
+            svg.append('line')
+                .attr('x1', 0)
+                .attr('y1', -3)
+                .attr('x2', 0)
+                .attr('y2', 3)
+                .attr('stroke', '#aaa')
+                .attr('stroke-width', 0.02);
+            
+            // Add axis labels
+            svg.append('text')
+                .attr('x', 2.8)
+                .attr('y', 0.2)
+                .attr('font-size', 0.2)
+                .attr('text-anchor', 'end')
+                .text('x');
+            
+            svg.append('text')
+                .attr('x', 0.2)
+                .attr('y', -2.8)
+                .attr('font-size', 0.2)
+                .attr('text-anchor', 'start')
+                .text('y');
+            
+            // Plot all words
+            Object.entries(wordVectors).forEach(([word, [x, y]]) => {
+                const isSelected = word === selectedWord1 || word === selectedWord2 || word === selectedWord3;
+                const isResult = calculatedResult && calculatedResult.word === word;
+                
+                // Draw the dot
+                svg.append('circle')
+                    .attr('cx', x)
+                    .attr('cy', -y) // Negate y for SVG coordinates
+                    .attr('r', isSelected || isResult ? 0.12 : 0.08)
+                    .attr('fill', colorMap[word] || '#dddddd')
+                    .attr('stroke', isSelected || isResult ? '#333' : 'none')
+                    .attr('stroke-width', 0.03);
+                
+                // Add the word label
+                svg.append('text')
+                    .attr('x', x)
+                    .attr('y', -y - 0.15) // Negate y for SVG coordinates
+                    .attr('font-size', isSelected || isResult ? 0.15 : 0.12)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-weight', isSelected || isResult ? 'bold' : 'normal')
+                    .text(word);
+            });
+            
+            // Draw the vectors if words are selected
+            if (selectedWord1) {
+                const [x1, y1] = wordVectors[selectedWord1];
+                drawVector(svg, 0, 0, x1, -y1, '#ff6666', 0.03);
+            }
+            
+            if (selectedWord2) {
+                const [x2, y2] = wordVectors[selectedWord2];
+                drawVector(svg, 0, 0, x2, -y2, '#6666ff', 0.03);
+            }
+            
+            if (selectedWord3) {
+                const [x3, y3] = wordVectors[selectedWord3];
+                drawVector(svg, 0, 0, x3, -y3, '#66ff66', 0.03);
+            }
+            
+            // Draw the result vector if calculation is done
+            if (calculatedResult) {
+                const [rx, ry] = calculatedResult.vector;
+                drawVector(svg, 0, 0, rx, -ry, '#ff9933', 0.04, true);
+            }
+            
+            // Draw the formula operation if all words are selected
+            if (selectedWord1 && selectedWord2 && selectedWord3 && calculatedResult) {
+                const [x1, y1] = wordVectors[selectedWord1];
+                const [x2, y2] = wordVectors[selectedWord2];
+                const [x3, y3] = wordVectors[selectedWord3];
+                
+                // Draw w1 - w2 operation
+                drawDashedLine(svg, x1, -y1, x2, -y2, '#993333', 0.02);
+                drawVector(svg, x2, -y2, x1, -y1, '#993333', 0.02);
+                
+                // Draw (w1 - w2) vector
+                const diffX = x1 - x2;
+                const diffY = -y1 - (-y2);
+                drawVector(svg, 0, 0, diffX, diffY, '#993333', 0.02);
+                
+                // Draw (w1 - w2) + w3 operation
+                drawDashedLine(svg, diffX, diffY, diffX + x3, diffY + (-y3), '#339933', 0.02);
+                drawVector(svg, diffX, diffY, x3, -y3, '#339933', 0.02);
+            }
+        }
+        
+        // Helper function to draw a vector
+        function drawVector(svg, x1, y1, x2, y2, color, width, isResult = false) {
+            // If x2, y2 are absolute coordinates
+            let dx, dy;
+            if (arguments.length === 6) {
+                dx = x2;
+                dy = y2;
+                x2 = x1 + dx;
+                y2 = y1 + dy;
+            } else {
+                dx = x2 - x1;
+                dy = y2 - y1;
+            }
+            
+            // Calculate the arrowhead points
+            const angle = Math.atan2(dy, dx);
+            const headLength = 0.15;
+            const headAngle = Math.PI / 6; // 30 degrees
+            
+            const headX1 = x2 - headLength * Math.cos(angle - headAngle);
+            const headY1 = y2 - headLength * Math.sin(angle - headAngle);
+            const headX2 = x2 - headLength * Math.cos(angle + headAngle);
+            const headY2 = y2 - headLength * Math.sin(angle + headAngle);
+            
+            // Draw the line
+            svg.append('line')
+                .attr('x1', x1)
+                .attr('y1', y1)
+                .attr('x2', x2)
+                .attr('y2', y2)
+                .attr('stroke', color)
+                .attr('stroke-width', width)
+                .attr('marker-end', 'url(#arrowhead)');
+            
+            // Draw the arrowhead
+            svg.append('path')
+                .attr('d', `M${x2},${y2} L${headX1},${headY1} L${headX2},${headY2} Z`)
+                .attr('fill', color);
+            
+            // Add animation if it's the result vector
+            if (isResult) {
+                svg.append('circle')
+                    .attr('cx', x2)
+                    .attr('cy', y2)
+                    .attr('r', 0.1)
+                    .attr('fill', 'none')
+                    .attr('stroke', color)
+                    .attr('stroke-width', 0.02)
+                    .call(animate);
+            }
+        }
+        
+        // Helper function to draw a dashed line
+        function drawDashedLine(svg, x1, y1, x2, y2, color, width) {
+            svg.append('line')
+                .attr('x1', x1)
+                .attr('y1', y1)
+                .attr('x2', x2)
+                .attr('y2', y2)
+                .attr('stroke', color)
+                .attr('stroke-width', width)
+                .attr('stroke-dasharray', '0.1 0.1');
+        }
+        
+        // Helper function to animate a circle
+        function animate(circle) {
+            (function repeat() {
+                circle
+                    .attr('r', 0.1)
+                    .attr('opacity', 1)
+                    .transition()
+                    .duration(1000)
+                    .attr('r', 0.3)
+                    .attr('opacity', 0)
+                    .on('end', repeat);
+            })();
+        }
+        
+        // Helper function to get contrast color
+        function getContrastColor(hexColor) {
+            // Default to black if hexColor is not valid
+            if (!hexColor || hexColor === '#dddddd') return '#000000';
+            
+            // Convert hex to RGB
+            let r, g, b;
+            if (hexColor.length === 4) {
+                r = parseInt(hexColor[1] + hexColor[1], 16);
+                g = parseInt(hexColor[2] + hexColor[2], 16);
+                b = parseInt(hexColor[3] + hexColor[3], 16);
+            } else {
+                r = parseInt(hexColor.slice(1, 3), 16);
+                g = parseInt(hexColor.slice(3, 5), 16);
+                b = parseInt(hexColor.slice(5, 7), 16);
+            }
+            
+            // Calculate luminance
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            
+            // Return black for bright colors and white for dark colors
+            return luminance > 0.5 ? '#000000' : '#ffffff';
+        }
+        
+        // Initialize the plot
+        drawPlot();
+    </script>
+</body>
+</html>
